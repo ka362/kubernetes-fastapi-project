@@ -1,0 +1,129 @@
+# 1. Check Docker version
+docker --version
+
+# 2. Check Docker Engine
+docker info
+
+# 3. Check kubectl
+kubectl version --client
+
+# 4. Check kind
+kind --version
+
+# 5. Install kind (if not installed)
+[ "$(uname -m)" = "x86_64" ] && ARCH=amd64 || ARCH=arm64
+curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.31.0/kind-linux-${ARCH}"
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
+
+# 6. Verify kind
+kind --version
+
+# 7. Create Kubernetes cluster
+kind create cluster --name fastapi-cluster
+
+# 8. Check Kubernetes nodes
+kubectl get nodes
+
+# 9. Create project folders
+mkdir -p app kubernetes
+
+# 10. Create project files
+touch app/main.py requirements.txt Dockerfile
+touch kubernetes/deployment.yaml kubernetes/service.yaml
+
+# 11. Build Docker image v1
+docker build -t kubernetes-fastapi:v1 .
+
+# 12. Load image into Kubernetes
+kind load docker-image kubernetes-fastapi:v1 --name fastapi-cluster
+
+# 13. Deploy application
+kubectl apply -f kubernetes/deployment.yaml
+
+# 14. Check Deployment
+kubectl get deployments
+
+# 15. Check Pods
+kubectl get pods
+
+# 16. Create Kubernetes Service
+kubectl apply -f kubernetes/service.yaml
+
+# 17. Check Services
+kubectl get services
+
+# 18. Port forwarding (keep this terminal running)
+kubectl port-forward service/fastapi-service 8000:80
+
+# 19. Test API (run in a second terminal)
+curl http://localhost:8000/health
+
+# 20. Test incidents endpoint
+curl http://localhost:8000/incidents
+
+# 21. Test application version
+curl http://localhost:8000/version
+
+# 22. Scale from 3 to 5 Pods
+kubectl scale deployment fastapi-deployment --replicas=5
+
+# 23. Verify scaling
+kubectl get pods
+
+# 24. Delete one Pod (replace with actual Pod name)
+kubectl delete pod <pod-name>
+
+# 25. Verify self-healing
+kubectl get pods
+
+# 26. Build Docker image v2 (after changing main.py to v2)
+docker build -t kubernetes-fastapi:v2 .
+
+# 27. Load v2 image
+kind load docker-image kubernetes-fastapi:v2 --name fastapi-cluster
+
+# 28. Perform rolling update
+kubectl set image deployment/fastapi-deployment fastapi-container=kubernetes-fastapi:v2
+
+# 29. Check rollout status
+kubectl rollout status deployment/fastapi-deployment
+
+# 30. Check Pods
+kubectl get pods
+
+# 31. Test v2
+curl http://localhost:8000/version
+
+# 32. Roll back to v1
+kubectl rollout undo deployment/fastapi-deployment
+
+# 33. Verify rollback
+kubectl rollout status deployment/fastapi-deployment
+
+# 34. Test v1
+curl http://localhost:8000/version
+
+# 35. Reapply final YAML (replicas: 5, image: v1)
+kubectl apply -f kubernetes/deployment.yaml
+
+# 36. Verify resources
+kubectl get nodes
+kubectl get deployments
+kubectl get pods
+kubectl get services
+
+# 37. Check rollout history
+kubectl rollout history deployment/fastapi-deployment
+
+# 38. Check Git changes
+git status
+
+# 39. Stage files
+git add .
+
+# 40. Commit changes
+git commit -m "Complete Kubernetes FastAPI deployment project"
+
+# 41. Push to GitHub
+git push origin main
